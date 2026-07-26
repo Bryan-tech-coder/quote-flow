@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id            String         @id @default(cuid())
+  name          String
+  users         User[]
+  clients       Client[]
+  quotes        Quote[]
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+}
+
+model User {
+  id                 String       @id @default(cuid())
+  name               String?
+  email              String       @unique
+  passwordHash       String
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  emailNotifications Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+}
+
+model Client {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  phone          String?
+  email          String?
+  address        String?
+  quotes         Quote[]
+  createdAt      DateTime     @default(now())
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REJECTED
+}
+
+model Quote {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clientId       String
+  client         Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  title          String
+  status         QuoteStatus    @default(DRAFT)
+  notes          String?
+  items          QuoteItem[]
+  notifications  Notification[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model QuoteItem {
+  id          String  @id @default(cuid())
+  quoteId     String
+  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Float   @default(1)
+  unitPrice   Float
+  order       Int     @default(0)
+}
+
+enum NotificationEvent {
+  QUOTE_SENT
+  QUOTE_APPROVED
+  QUOTE_REJECTED
+}
+
+enum NotificationChannel {
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model Notification {
+  id             String              @id @default(cuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  quoteId        String?
+  quote          Quote?              @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  event          NotificationEvent
+  channel        NotificationChannel @default(EMAIL)
+  recipient      String
+  subject        String
+  body           String
+  status         NotificationStatus  @default(PENDING)
+  attempts       Int                 @default(0)
+  maxAttempts    Int                 @default(5)
+  lastError      String?
+  nextAttemptAt  DateTime            @default(now())
+  createdAt      DateTime            @default(now())
+  sentAt         DateTime?
+
+  @@index([status, nextAttemptAt])
+}
