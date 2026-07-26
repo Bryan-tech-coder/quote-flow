@@ -72,7 +72,7 @@ src/app/dashboard/                 Protected app: quotes, clients, notifications
 
 ## Deployment
 
-Deployed on [Vercel](https://vercel.com) with a [Neon](https://neon.tech) Postgres database. `package.json` includes a `postinstall: prisma generate` script so the generated client (gitignored) is rebuilt on every install. `vercel.json` schedules the notification retry sweep via Vercel Cron.
+Deployed on [Vercel](https://vercel.com) with a [Neon](https://neon.tech) Postgres database. `package.json` includes a `postinstall: prisma generate` script so the generated client (gitignored) is rebuilt on every install. `vercel.json` schedules the notification retry sweep via Vercel Cron — daily, since Vercel's Hobby plan only allows daily cron schedules (a Pro plan would allow hourly or finer). This only affects the retry sweep for failed sends; new notifications still attempt delivery immediately when enqueued.
 
 ## Possible extensions
 
