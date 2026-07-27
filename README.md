@@ -11,6 +11,8 @@
 
 A multi-tenant SaaS for contractors and service businesses to send professional quotes, track their status, and manage clients — built to be a real product, not just a demo.
 
+**[Read the architecture case study →](CASE_STUDY.md)** — how the notification engine's Postgres-backed queue, retry/backoff, and failure isolation work, and what I'd change with more time.
+
 ## Features
 
 - Multi-tenant auth (NextAuth.js credentials provider) — signing up creates a business (`Organization`) with its own clients and quotes, isolated from every other tenant
