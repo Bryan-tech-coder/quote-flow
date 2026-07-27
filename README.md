@@ -51,6 +51,14 @@ A multi-tenant SaaS for contractors and service businesses to send professional 
    npx prisma migrate dev
    ```
 
+   Optionally seed realistic demo data (a contractor org with clients and quotes across every status):
+
+   ```bash
+   npx prisma db seed
+   ```
+
+   Logs in as `demo@quoteflow.app` / `Demo1234!`. Safe to re-run — it replaces the previous demo org instead of duplicating it.
+
 3. Start the dev server:
 
    ```bash
