@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { processPendingNotifications } from "@/lib/notifications/queue";
+import { sendStaleQuoteReminders } from "@/lib/notifications/reminders";
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -10,6 +11,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const remindersSent = await sendStaleQuoteReminders();
   const processed = await processPendingNotifications();
-  return NextResponse.json({ processed });
+  return NextResponse.json({ remindersSent, processed });
 }

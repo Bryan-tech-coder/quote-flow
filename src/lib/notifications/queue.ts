@@ -3,12 +3,11 @@ import { sendEmail } from "@/lib/notifications/channels/email";
 import { renderTemplate } from "@/lib/notifications/templates";
 import { backoffFor } from "@/lib/notifications/backoff";
 import { calculateTotal } from "@/lib/quotes";
+import { publicQuoteUrl, dashboardQuoteUrl } from "@/lib/notifications/urls";
+import { generateQuotePdfBuffer } from "@/lib/pdf/quotePdf";
 import type { NotificationEvent } from "@/generated/prisma/client";
 
-function quoteUrl(quoteId: string): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  return `${base}/dashboard/quotes/${quoteId}`;
-}
+const CLIENT_FACING_EVENTS: NotificationEvent[] = ["QUOTE_SENT", "QUOTE_REMINDER"];
 
 export async function enqueueQuoteNotification(
   quoteId: string,
@@ -25,23 +24,23 @@ export async function enqueueQuoteNotification(
   if (!quote) return;
 
   const total = calculateTotal(quote.items);
+  const isClientFacing = CLIENT_FACING_EVENTS.includes(event);
 
   const ctx = {
     quoteTitle: quote.title,
     clientName: quote.client.name,
     businessName: quote.organization.name,
     total,
-    quoteUrl: quoteUrl(quote.id),
+    quoteUrl: isClientFacing ? publicQuoteUrl(quote.id) : dashboardQuoteUrl(quote.id),
   };
 
-  const recipients: string[] =
-    event === "QUOTE_SENT"
-      ? quote.client.email
-        ? [quote.client.email]
-        : []
-      : quote.organization.users
-          .filter((u) => u.emailNotifications)
-          .map((u) => u.email);
+  const recipients: string[] = isClientFacing
+    ? quote.client.email
+      ? [quote.client.email]
+      : []
+    : quote.organization.users
+        .filter((u) => u.emailNotifications)
+        .map((u) => u.email);
 
   if (recipients.length === 0) return;
 
@@ -61,6 +60,19 @@ export async function enqueueQuoteNotification(
   await processPendingNotifications();
 }
 
+async function buildQuotePdfAttachment(
+  quoteId: string
+): Promise<{ filename: string; content: Buffer } | undefined> {
+  const quote = await prisma.quote.findUnique({
+    where: { id: quoteId },
+    include: { client: true, organization: true, items: true },
+  });
+  if (!quote) return undefined;
+
+  const content = await generateQuotePdfBuffer(quote);
+  return { filename: `quote-${quote.id.slice(-8)}.pdf`, content };
+}
+
 export async function processPendingNotifications(limit = 20) {
   const pending = await prisma.notification.findMany({
     where: { status: "PENDING", nextAttemptAt: { lte: new Date() } },
@@ -70,10 +82,16 @@ export async function processPendingNotifications(limit = 20) {
 
   for (const notification of pending) {
     try {
+      const attachment =
+        notification.event === "QUOTE_SENT" && notification.quoteId
+          ? await buildQuotePdfAttachment(notification.quoteId)
+          : undefined;
+
       await sendEmail({
         to: notification.recipient,
         subject: notification.subject,
         body: notification.body,
+        attachment,
       });
       await prisma.notification.update({
         where: { id: notification.id },

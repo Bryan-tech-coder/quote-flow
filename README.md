@@ -16,8 +16,11 @@ A multi-tenant SaaS for contractors and service businesses to send professional 
 - Multi-tenant auth (NextAuth.js credentials provider) — signing up creates a business (`Organization`) with its own clients and quotes, isolated from every other tenant
 - Client management (contact info, address)
 - Quotes with dynamic line items, computed totals, status tracking (Draft → Sent → Approved/Rejected)
-- Print-friendly quote view (browser print-to-PDF) for sending to clients
-- **Omnichannel notification engine**: quote status changes enqueue notifications processed by a Postgres-backed job queue with exponential backoff retries (up to 5 attempts), a delivery log with per-notification error tracking, and per-user email preferences — a Vercel Cron job sweeps failed/pending sends on a schedule so nothing is lost to a transient failure
+- Print-friendly quote view (browser print-to-PDF) for the business's own copy
+- **Real PDF generation** (`@react-pdf/renderer`) attached to the "quote sent" email — the client gets an actual PDF, not just a link
+- **Public, no-login approve/reject page** (`/q/[id]`) — the link sent to clients in the "quote sent" email; approving or rejecting there updates the quote status and fires the same notification pipeline as a manual status change
+- **Automatic follow-up reminders** — quotes left in "Sent" for 3+ days with no client response get one reminder email, swept in by the same daily cron that retries failed notifications
+- **Omnichannel notification engine**: quote status changes enqueue notifications processed by a Postgres-backed job queue with exponential backoff retries (up to 5 attempts), a delivery log with per-notification error tracking, and per-user email preferences — a Vercel Cron job sweeps failed/pending sends and stale-quote reminders on a schedule so nothing is lost to a transient failure
 - Pluggable email channel (Resend API) that gracefully logs to the console in local dev when no API key is configured
 
 ## Tech stack
@@ -72,11 +75,13 @@ A multi-tenant SaaS for contractors and service businesses to send professional 
 ```
 prisma/schema.prisma              Organization, User, Client, Quote, QuoteItem, Notification models
 src/auth.ts                       NextAuth config (credentials provider, JWT sessions)
-src/lib/actions/                  Server Actions (auth, clients, quotes, settings)
-src/lib/notifications/            Notification queue, retry/backoff logic, templates, email channel adapter
-src/app/api/cron/process-notifications/  Cron endpoint that sweeps pending/failed notifications
+src/lib/actions/                  Server Actions (auth, clients, quotes, settings, public quote responses)
+src/lib/notifications/            Notification queue, retry/backoff, stale-quote reminders, templates, email channel adapter
+src/lib/pdf/                      PDF quote generation (@react-pdf/renderer)
+src/app/api/cron/process-notifications/  Cron endpoint: sends reminders, then sweeps pending/failed notifications
 src/app/(auth)/                    Login / register pages
 src/app/dashboard/                 Protected app: quotes, clients, notifications log, settings
+src/app/q/[id]/                    Public, no-login quote view + approve/reject
 ```
 
 ## Deployment
@@ -85,7 +90,6 @@ Deployed on [Vercel](https://vercel.com) with a [Neon](https://neon.tech) Postgr
 
 ## Possible extensions
 
-- Client-facing approve/reject link (no login required) instead of manual status changes
 - SMS channel alongside email
 - Stripe integration for deposit collection on approved quotes
 - CSV export of quotes and clients

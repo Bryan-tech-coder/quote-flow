@@ -2,12 +2,16 @@ export async function sendEmail(params: {
   to: string;
   subject: string;
   body: string;
+  attachment?: { filename: string; content: Buffer };
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.NOTIFICATIONS_FROM_EMAIL ?? "onboarding@resend.dev";
 
   if (!apiKey) {
-    console.log(`[notifications:email:dev] to=${params.to} subject="${params.subject}"`);
+    const attachmentNote = params.attachment ? ` attachment=${params.attachment.filename}` : "";
+    console.log(
+      `[notifications:email:dev] to=${params.to} subject="${params.subject}"${attachmentNote}`
+    );
     return;
   }
 
@@ -22,6 +26,14 @@ export async function sendEmail(params: {
       to: params.to,
       subject: params.subject,
       text: params.body,
+      ...(params.attachment && {
+        attachments: [
+          {
+            filename: params.attachment.filename,
+            content: params.attachment.content.toString("base64"),
+          },
+        ],
+      }),
     }),
   });
 

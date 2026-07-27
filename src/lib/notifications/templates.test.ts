@@ -32,6 +32,13 @@ describe("renderTemplate", () => {
     expect(body).toContain(ctx.clientName);
   });
 
+  it("QUOTE_REMINDER addresses the client and includes the quote link", () => {
+    const { subject, body } = renderTemplate("QUOTE_REMINDER", ctx);
+    expect(subject.toLowerCase()).toContain("reminder");
+    expect(body).toContain(ctx.clientName);
+    expect(body).toContain(ctx.quoteUrl);
+  });
+
   it("formats the total to two decimal places", () => {
     const { body } = renderTemplate("QUOTE_SENT", { ...ctx, total: 1234.5 });
     expect(body).toContain("$1234.50");

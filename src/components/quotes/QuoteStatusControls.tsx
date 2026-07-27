@@ -1,7 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { updateQuoteStatus, deleteQuote } from "@/lib/actions/quotes";
+import { publicQuoteUrl } from "@/lib/notifications/urls";
 import type { QuoteStatus } from "@/generated/prisma/client";
 
 const statuses: QuoteStatus[] = ["DRAFT", "SENT", "APPROVED", "REJECTED"];
@@ -14,6 +15,13 @@ export function QuoteStatusControls({
   status: QuoteStatus;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [copied, setCopied] = useState(false);
+
+  const copyClientLink = async () => {
+    await navigator.clipboard.writeText(publicQuoteUrl(quoteId));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-2 print:hidden">
@@ -32,6 +40,12 @@ export function QuoteStatusControls({
         className="ml-2 rounded-md border border-neutral-300 px-3 py-1.5 text-sm transition hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-900"
       >
         Print / Save as PDF
+      </button>
+      <button
+        onClick={copyClientLink}
+        className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm transition hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-900"
+      >
+        {copied ? "Link copied!" : "Copy client link"}
       </button>
       <button
         onClick={() => {

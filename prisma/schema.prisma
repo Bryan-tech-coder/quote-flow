@@ -59,6 +59,7 @@ model Quote {
   title          String
   status         QuoteStatus    @default(DRAFT)
   notes          String?
+  reminderSentAt DateTime?
   items          QuoteItem[]
   notifications  Notification[]
   createdAt      DateTime       @default(now())
@@ -79,6 +80,7 @@ enum NotificationEvent {
   QUOTE_SENT
   QUOTE_APPROVED
   QUOTE_REJECTED
+  QUOTE_REMINDER
 }
 
 enum NotificationChannel {
