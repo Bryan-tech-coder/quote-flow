@@ -3,8 +3,8 @@ function baseUrl(): string {
 }
 
 /** Public, no-login link the client uses to view and approve/reject the quote. */
-export function publicQuoteUrl(quoteId: string): string {
-  return `${baseUrl()}/q/${quoteId}`;
+export function publicQuoteUrl(accessToken: string): string {
+  return `${baseUrl()}/q/${accessToken}`;
 }
 
 /** Login-gated link for the business's own dashboard. */

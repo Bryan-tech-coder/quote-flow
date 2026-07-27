@@ -59,6 +59,7 @@ model Quote {
   title          String
   status         QuoteStatus    @default(DRAFT)
   notes          String?
+  accessToken    String         @unique @default(cuid())
   reminderSentAt DateTime?
   items          QuoteItem[]
   notifications  Notification[]

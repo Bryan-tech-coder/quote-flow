@@ -9,16 +9,18 @@ const statuses: QuoteStatus[] = ["DRAFT", "SENT", "APPROVED", "REJECTED"];
 
 export function QuoteStatusControls({
   quoteId,
+  accessToken,
   status,
 }: {
   quoteId: string;
+  accessToken: string;
   status: QuoteStatus;
 }) {
   const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
 
   const copyClientLink = async () => {
-    await navigator.clipboard.writeText(publicQuoteUrl(quoteId));
+    await navigator.clipboard.writeText(publicQuoteUrl(accessToken));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

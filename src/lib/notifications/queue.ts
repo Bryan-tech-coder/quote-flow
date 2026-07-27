@@ -31,7 +31,7 @@ export async function enqueueQuoteNotification(
     clientName: quote.client.name,
     businessName: quote.organization.name,
     total,
-    quoteUrl: isClientFacing ? publicQuoteUrl(quote.id) : dashboardQuoteUrl(quote.id),
+    quoteUrl: isClientFacing ? publicQuoteUrl(quote.accessToken) : dashboardQuoteUrl(quote.id),
   };
 
   const recipients: string[] = isClientFacing

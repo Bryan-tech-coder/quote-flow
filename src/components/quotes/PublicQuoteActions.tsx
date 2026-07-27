@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { respondToQuote } from "@/lib/actions/publicQuotes";
 
-export function PublicQuoteActions({ quoteId }: { quoteId: string }) {
+export function PublicQuoteActions({ accessToken }: { accessToken: string }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [responded, setResponded] = useState<"APPROVED" | "REJECTED" | null>(null);
@@ -11,7 +11,7 @@ export function PublicQuoteActions({ quoteId }: { quoteId: string }) {
   const respond = (decision: "APPROVED" | "REJECTED") => {
     setError(null);
     startTransition(async () => {
-      const result = await respondToQuote(quoteId, decision);
+      const result = await respondToQuote(accessToken, decision);
       if (result?.error) {
         setError(result.error);
         return;

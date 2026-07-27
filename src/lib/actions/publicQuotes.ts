@@ -7,24 +7,24 @@ import { enqueueQuoteNotification } from "@/lib/notifications/queue";
 export type PublicQuoteActionState = { error?: string } | undefined;
 
 export async function respondToQuote(
-  quoteId: string,
+  accessToken: string,
   decision: "APPROVED" | "REJECTED"
 ): Promise<PublicQuoteActionState> {
-  const quote = await prisma.quote.findUnique({ where: { id: quoteId } });
+  const quote = await prisma.quote.findUnique({ where: { accessToken } });
   if (!quote) return { error: "Quote not found." };
   if (quote.status !== "SENT") {
     return { error: "This quote has already been responded to." };
   }
 
   await prisma.quote.update({
-    where: { id: quoteId },
+    where: { accessToken },
     data: { status: decision },
   });
 
   await enqueueQuoteNotification(
-    quoteId,
+    quote.id,
     decision === "APPROVED" ? "QUOTE_APPROVED" : "QUOTE_REJECTED"
   );
 
-  revalidatePath(`/q/${quoteId}`);
+  revalidatePath(`/q/${accessToken}`);
 }

@@ -31,7 +31,11 @@ export default async function QuoteDetailPage({
         <h1 className="text-xl font-semibold tracking-tight">{quote.title}</h1>
       </div>
 
-      <QuoteStatusControls quoteId={quote.id} status={quote.status} />
+      <QuoteStatusControls
+        quoteId={quote.id}
+        accessToken={quote.accessToken}
+        status={quote.status}
+      />
 
       <div className="rounded-lg border border-neutral-200 p-6 print:border-0 dark:border-neutral-800">
         <div className="flex items-start justify-between border-b border-neutral-200 pb-4 dark:border-neutral-800">

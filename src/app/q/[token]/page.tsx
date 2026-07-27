@@ -18,12 +18,12 @@ const statusStyles: Record<string, string> = {
 export default async function PublicQuotePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ token: string }>;
 }) {
-  const { id } = await params;
+  const { token } = await params;
 
   const quote = await prisma.quote.findUnique({
-    where: { id },
+    where: { accessToken: token },
     include: {
       client: true,
       items: { orderBy: { order: "asc" } },
@@ -109,7 +109,9 @@ export default async function PublicQuotePage({
         )}
       </div>
 
-      {quote.status === "SENT" && <PublicQuoteActions quoteId={quote.id} />}
+      {quote.status === "SENT" && (
+        <PublicQuoteActions accessToken={quote.accessToken} />
+      )}
       {quote.status === "APPROVED" && (
         <p className="text-sm text-neutral-500">
           This quote was approved on {new Date(quote.updatedAt).toLocaleDateString()}.
