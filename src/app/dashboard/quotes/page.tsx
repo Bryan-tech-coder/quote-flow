@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { calculateTotal } from "@/lib/quotes";
 
 const statusStyles: Record<string, string> = {
   DRAFT: "bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300",
@@ -39,10 +40,7 @@ export default async function QuotesPage() {
           </p>
         )}
         {quotes.map((quote) => {
-          const total = quote.items.reduce(
-            (sum, item) => sum + item.quantity * item.unitPrice,
-            0
-          );
+          const total = calculateTotal(quote.items);
           return (
             <Link
               key={quote.id}

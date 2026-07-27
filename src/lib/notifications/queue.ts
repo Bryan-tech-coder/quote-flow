@@ -1,14 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/notifications/channels/email";
 import { renderTemplate } from "@/lib/notifications/templates";
+import { backoffFor } from "@/lib/notifications/backoff";
+import { calculateTotal } from "@/lib/quotes";
 import type { NotificationEvent } from "@/generated/prisma/client";
-
-const BASE_BACKOFF_MS = 30_000;
-const MAX_BACKOFF_MS = 60 * 60_000;
-
-function backoffFor(attempts: number): number {
-  return Math.min(BASE_BACKOFF_MS * 2 ** attempts, MAX_BACKOFF_MS);
-}
 
 function quoteUrl(quoteId: string): string {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -29,10 +24,7 @@ export async function enqueueQuoteNotification(
   });
   if (!quote) return;
 
-  const total = quote.items.reduce(
-    (sum, item) => sum + item.quantity * item.unitPrice,
-    0
-  );
+  const total = calculateTotal(quote.items);
 
   const ctx = {
     quoteTitle: quote.title,

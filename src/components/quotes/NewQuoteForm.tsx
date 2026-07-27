@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createQuote } from "@/lib/actions/quotes";
+import { calculateTotal } from "@/lib/quotes";
 
 type Item = { description: string; quantity: string; unitPrice: string };
 
@@ -21,11 +22,12 @@ export function NewQuoteForm({
     );
   };
 
-  const total = items.reduce((sum, item) => {
-    const qty = parseFloat(item.quantity) || 0;
-    const price = parseFloat(item.unitPrice) || 0;
-    return sum + qty * price;
-  }, 0);
+  const total = calculateTotal(
+    items.map((item) => ({
+      quantity: parseFloat(item.quantity) || 0,
+      unitPrice: parseFloat(item.unitPrice) || 0,
+    }))
+  );
 
   return (
     <form action={formAction} className="flex max-w-2xl flex-col gap-4">

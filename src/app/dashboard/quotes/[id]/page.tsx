@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { calculateTotal } from "@/lib/quotes";
 import { QuoteStatusControls } from "@/components/quotes/QuoteStatusControls";
 
 export default async function QuoteDetailPage({
@@ -22,10 +23,7 @@ export default async function QuoteDetailPage({
 
   if (!quote) notFound();
 
-  const total = quote.items.reduce(
-    (sum, item) => sum + item.quantity * item.unitPrice,
-    0
-  );
+  const total = calculateTotal(quote.items);
 
   return (
     <div className="flex flex-col gap-6">
