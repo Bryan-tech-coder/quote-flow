@@ -37,6 +37,15 @@ export default async function QuoteDetailPage({
         status={quote.status}
       />
 
+      {quote.depositAmountCents != null && (
+        <p className="text-sm text-neutral-500 print:hidden">
+          Deposit: ${(quote.depositAmountCents / 100).toFixed(2)} —{" "}
+          {quote.depositPaidAt
+            ? `paid ${new Date(quote.depositPaidAt).toLocaleDateString()}`
+            : "awaiting payment"}
+        </p>
+      )}
+
       <div className="rounded-lg border border-neutral-200 p-6 print:border-0 dark:border-neutral-800">
         <div className="flex items-start justify-between border-b border-neutral-200 pb-4 dark:border-neutral-800">
           <div>

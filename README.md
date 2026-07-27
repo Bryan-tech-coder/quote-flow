@@ -22,6 +22,7 @@ A multi-tenant SaaS for contractors and service businesses to send professional 
 - **Real PDF generation** (`@react-pdf/renderer`) attached to the "quote sent" email — the client gets an actual PDF, not just a link
 - **Public, no-login approve/reject page** (`/q/[id]`) — the link sent to clients in the "quote sent" email; approving or rejecting there updates the quote status and fires the same notification pipeline as a manual status change
 - **Automatic follow-up reminders** — quotes left in "Sent" for 3+ days with no client response get one reminder email, swept in by the same daily cron that retries failed notifications
+- **Stripe deposit collection**: businesses can require a configurable percentage of the quote upfront (Settings → Deposits); once a client approves a quote, they're offered a Stripe Checkout session for that deposit, and a webhook confirms payment and notifies the business — real Stripe test-mode integration, not a stub
 - **Omnichannel notification engine**: quote status changes enqueue notifications processed by a Postgres-backed job queue with exponential backoff retries (up to 5 attempts), a delivery log with per-notification error tracking, and per-user email preferences — a Vercel Cron job sweeps failed/pending sends and stale-quote reminders on a schedule so nothing is lost to a transient failure
 - Pluggable email channel (Resend API) that gracefully logs to the console in local dev when no API key is configured
 
@@ -48,6 +49,8 @@ A multi-tenant SaaS for contractors and service businesses to send professional 
    ```
 
    `RESEND_API_KEY` is optional — without it, notification emails are logged to the server console instead of sent.
+
+   `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` are optional — without them, deposit collection is simply disabled (no "Pay deposit" button appears, and `/api/stripe/webhook` returns 501).
 
 2. Install dependencies and run migrations:
 
@@ -80,7 +83,9 @@ src/auth.ts                       NextAuth config (credentials provider, JWT ses
 src/lib/actions/                  Server Actions (auth, clients, quotes, settings, public quote responses)
 src/lib/notifications/            Notification queue, retry/backoff, stale-quote reminders, templates, email channel adapter
 src/lib/pdf/                      PDF quote generation (@react-pdf/renderer)
+src/lib/stripe.ts                 Stripe client, returns null when unconfigured
 src/app/api/cron/process-notifications/  Cron endpoint: sends reminders, then sweeps pending/failed notifications
+src/app/api/stripe/webhook/       Stripe webhook: confirms deposit payment, marks the quote paid, notifies the business
 src/app/(auth)/                    Login / register pages
 src/app/dashboard/                 Protected app: quotes, clients, notifications log, settings
 src/app/q/[id]/                    Public, no-login quote view + approve/reject
@@ -90,10 +95,20 @@ src/app/q/[id]/                    Public, no-login quote view + approve/reject
 
 Deployed on [Vercel](https://vercel.com) with a [Neon](https://neon.tech) Postgres database. `package.json` includes a `postinstall: prisma generate` script so the generated client (gitignored) is rebuilt on every install. `vercel.json` schedules the notification retry sweep via Vercel Cron — daily, since Vercel's Hobby plan only allows daily cron schedules (a Pro plan would allow hourly or finer). This only affects the retry sweep for failed sends; new notifications still attempt delivery immediately when enqueued.
 
+## Deposits (Stripe)
+
+Set a deposit percentage per business at Settings → Deposits. Once a client approves a quote, if a deposit is configured, they see a "Pay deposit" button that opens a Stripe Checkout session (test mode — use [Stripe's test cards](https://docs.stripe.com/testing#cards), e.g. `4242 4242 4242 4242`). On `checkout.session.completed`, `/api/stripe/webhook` marks the quote's deposit paid and notifies the business via the same notification engine used everywhere else.
+
+To test locally, forward webhooks with the [Stripe CLI](https://docs.stripe.com/stripe-cli):
+
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
 ## Possible extensions
 
 - SMS channel alongside email
-- Stripe integration for deposit collection on approved quotes
+- Stripe Connect (each contractor's own Stripe account) instead of a single platform account
 - CSV export of quotes and clients
 
 ## Author

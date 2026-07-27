@@ -32,6 +32,7 @@ export async function enqueueQuoteNotification(
     businessName: quote.organization.name,
     total,
     quoteUrl: isClientFacing ? publicQuoteUrl(quote.accessToken) : dashboardQuoteUrl(quote.id),
+    depositAmount: quote.depositAmountCents != null ? quote.depositAmountCents / 100 : undefined,
   };
 
   const recipients: string[] = isClientFacing

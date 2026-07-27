@@ -6,6 +6,7 @@ type QuoteContext = {
   businessName: string;
   total: number;
   quoteUrl: string;
+  depositAmount?: number;
 };
 
 export function renderTemplate(
@@ -35,5 +36,12 @@ export function renderTemplate(
         subject: `Reminder: quote awaiting your response — ${ctx.quoteTitle}`,
         body: `Hi ${ctx.clientName},\n\nJust a reminder that ${ctx.businessName} sent you a quote for "${ctx.quoteTitle}" (${totalFormatted}) that's still awaiting your response.\n\nView and respond here: ${ctx.quoteUrl}\n\nThanks,\n${ctx.businessName}`,
       };
+    case "DEPOSIT_PAID": {
+      const depositFormatted = `$${(ctx.depositAmount ?? 0).toFixed(2)}`;
+      return {
+        subject: `Deposit received: ${ctx.quoteTitle}`,
+        body: `${ctx.clientName} paid a ${depositFormatted} deposit on the quote "${ctx.quoteTitle}" (${totalFormatted} total).\n\nView it here: ${ctx.quoteUrl}`,
+      };
+    }
   }
 }

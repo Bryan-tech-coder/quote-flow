@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { calculateTotal } from "@/lib/quotes";
+import { calculateTotal, calculateDepositCents } from "@/lib/quotes";
 import { PublicQuoteActions } from "@/components/quotes/PublicQuoteActions";
+import { DepositCheckoutButton } from "@/components/quotes/DepositCheckoutButton";
 
 export const metadata: Metadata = {
   title: "Quote — QuoteFlow",
@@ -17,10 +18,13 @@ const statusStyles: Record<string, string> = {
 
 export default async function PublicQuotePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ deposit?: string }>;
 }) {
   const { token } = await params;
+  const { deposit } = await searchParams;
 
   const quote = await prisma.quote.findUnique({
     where: { accessToken: token },
@@ -34,6 +38,8 @@ export default async function PublicQuotePage({
   if (!quote) notFound();
 
   const total = calculateTotal(quote.items);
+  const depositCents =
+    quote.depositAmountCents ?? calculateDepositCents(total, quote.organization.depositPercent);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-6 px-4 py-10 sm:px-6">
@@ -113,9 +119,26 @@ export default async function PublicQuotePage({
         <PublicQuoteActions accessToken={quote.accessToken} />
       )}
       {quote.status === "APPROVED" && (
-        <p className="text-sm text-neutral-500">
-          This quote was approved on {new Date(quote.updatedAt).toLocaleDateString()}.
-        </p>
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-neutral-500">
+            This quote was approved on {new Date(quote.updatedAt).toLocaleDateString()}.
+          </p>
+          {deposit === "success" && (
+            <p className="rounded-md border border-green-200 bg-green-50 p-3 text-sm font-medium text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300">
+              Deposit received — thank you!
+            </p>
+          )}
+          {quote.depositPaidAt ? (
+            <p className="text-sm text-neutral-500">
+              Deposit of ${(quote.depositAmountCents! / 100).toFixed(2)} received on{" "}
+              {new Date(quote.depositPaidAt).toLocaleDateString()}.
+            </p>
+          ) : (
+            depositCents !== null && (
+              <DepositCheckoutButton accessToken={quote.accessToken} amountCents={depositCents} />
+            )
+          )}
+        </div>
       )}
       {quote.status === "REJECTED" && (
         <p className="text-sm text-neutral-500">

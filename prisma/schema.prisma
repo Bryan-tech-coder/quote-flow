@@ -11,13 +11,14 @@ datasource db {
 }
 
 model Organization {
-  id            String         @id @default(cuid())
-  name          String
-  users         User[]
-  clients       Client[]
-  quotes        Quote[]
-  notifications Notification[]
-  createdAt     DateTime       @default(now())
+  id             String         @id @default(cuid())
+  name           String
+  depositPercent Int            @default(0)
+  users          User[]
+  clients        Client[]
+  quotes         Quote[]
+  notifications  Notification[]
+  createdAt      DateTime       @default(now())
 }
 
 model User {
@@ -61,6 +62,9 @@ model Quote {
   notes          String?
   accessToken    String         @unique @default(cuid())
   reminderSentAt DateTime?
+  depositAmountCents      Int?
+  depositPaidAt           DateTime?
+  stripeCheckoutSessionId String?        @unique
   items          QuoteItem[]
   notifications  Notification[]
   createdAt      DateTime       @default(now())
@@ -82,6 +86,7 @@ enum NotificationEvent {
   QUOTE_APPROVED
   QUOTE_REJECTED
   QUOTE_REMINDER
+  DEPOSIT_PAID
 }
 
 enum NotificationChannel {
