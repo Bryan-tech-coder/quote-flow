@@ -30,12 +30,14 @@ export async function POST(request: NextRequest) {
     const quoteId = session.metadata?.quoteId;
 
     if (quoteId) {
-      const quote = await prisma.quote.findUnique({ where: { id: quoteId } });
-      if (quote && !quote.depositPaidAt) {
-        await prisma.quote.update({
-          where: { id: quoteId },
-          data: { depositPaidAt: new Date() },
-        });
+      // Atomic claim: only the request that actually flips depositPaidAt from
+      // null enqueues the notification, so Stripe's at-least-once webhook
+      // retries can't produce duplicate "deposit paid" emails.
+      const { count } = await prisma.quote.updateMany({
+        where: { id: quoteId, depositPaidAt: null },
+        data: { depositPaidAt: new Date() },
+      });
+      if (count > 0) {
         await enqueueQuoteNotification(quoteId, "DEPOSIT_PAID");
       }
     }
